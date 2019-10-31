@@ -40,7 +40,7 @@ namespace Interaction
             internal static class Parameters
             {
                 public const string InventorDoc = nameof(InventorDoc);
-                public const string OutputIpt = nameof(OutputIpt);
+                public const string OutputSat = nameof(OutputSat);
             }
         }
 
@@ -65,16 +65,16 @@ namespace Interaction
                             new Parameter
                             {
                                 Verb = Verb.Get,
-                                Description = "IPT file to process"
+                                Description = "Inventor document to process"
                             }
                         },
                         {
-                            Constants.Parameters.OutputIpt,
+                            Constants.Parameters.OutputSat,
                             new Parameter
                             {
                                 Verb = Verb.Put,
-                                LocalName = "result.ipt",
-                                Description = "Resulting IPT",
+                                LocalName = "export.sat",
+                                Description = "Exported SAT file",
                                 Ondemand = false,
                                 Required = false
                             }
@@ -98,7 +98,7 @@ namespace Interaction
                             }
                         },
                         {
-                            Constants.Parameters.OutputIpt,
+                            Constants.Parameters.OutputSat,
                             new XrefTreeArgument
                             {
                                 Verb = Verb.Put,

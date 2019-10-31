@@ -62,7 +62,8 @@ namespace InventorSatExportPlugin
 
                 Trace.TraceInformation(traceInfo.ToString());
 
-                string dirPath = System.IO.Path.GetDirectoryName(doc.FullDocumentName);
+                //string dirPath = System.IO.Path.GetDirectoryName(doc.FullDocumentName);
+                string dirPath = System.IO.Directory.GetCurrentDirectory();
 
                 #region ExportSAT file 
 
