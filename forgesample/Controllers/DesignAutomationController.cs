@@ -42,8 +42,10 @@ using AppBundle = Autodesk.Forge.DesignAutomation.Model.AppBundle;
 using Parameter = Autodesk.Forge.DesignAutomation.Model.Parameter;
 using WorkItem = Autodesk.Forge.DesignAutomation.Model.WorkItem;
 using WorkItemStatus = Autodesk.Forge.DesignAutomation.Model.WorkItemStatus;
-
-
+using Microsoft.Extensions.Configuration;
+using System.Net.Http;
+using Autodesk.Forge.Core;
+using Microsoft.Extensions.Options;
 
 namespace forgeSample.Controllers
 {
@@ -62,6 +64,8 @@ namespace forgeSample.Controllers
         public static string Alias { get { return "dev"; } }
         // Design Automation v3 API
         DesignAutomationClient _designAutomation;
+
+        public static string bucketUrl = "https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}";
 
         // Constructor, where env and hubContext are specified
         public DesignAutomationController(IHostingEnvironment env, IHubContext<DesignAutomationHub> hubContext, DesignAutomationClient api)
@@ -279,7 +283,7 @@ namespace forgeSample.Controllers
             // 1. input file
             XrefTreeArgument inputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFile),
+                Url = string.Format(bucketUrl, bucketKey, inputFile),
                 Headers = new Dictionary<string, string>()
                  {
                      { "Authorization", "Bearer " + oauth.access_token }
@@ -297,7 +301,7 @@ namespace forgeSample.Controllers
             // 3. output file
             XrefTreeArgument outputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFile),
+                Url = string.Format(bucketUrl, bucketKey, outputFile),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
@@ -307,7 +311,7 @@ namespace forgeSample.Controllers
             // 4. Viewable output
             XrefTreeArgument viewableArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, viewableFile),
+                Url = string.Format(bucketUrl, bucketKey, viewableFile),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
            {
@@ -371,7 +375,7 @@ namespace forgeSample.Controllers
             // 1. input file
             XrefTreeArgument inputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, inputFileNameOSS),
                 Headers = new Dictionary<string, string>()
                  {
                      { "Authorization", "Bearer " + oauth.access_token }
@@ -394,7 +398,7 @@ namespace forgeSample.Controllers
             // 3. output svf file
             XrefTreeArgument outputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, outputFileNameOSS),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
@@ -404,7 +408,7 @@ namespace forgeSample.Controllers
             // 3. output assembly file
             XrefTreeArgument outputAssemblyFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputAssemblyFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, outputAssemblyFileNameOSS),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
@@ -463,7 +467,7 @@ namespace forgeSample.Controllers
             // 1. input file
             XrefTreeArgument inputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, inputFileNameOSS),
                 Headers = new Dictionary<string, string>()
                  {
                      { "Authorization", "Bearer " + oauth.access_token }
@@ -480,7 +484,7 @@ namespace forgeSample.Controllers
             // 3. output pdf file
             XrefTreeArgument outputDrawingFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputDrawingFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, outputDrawingFileNameOSS),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
@@ -491,7 +495,7 @@ namespace forgeSample.Controllers
             // 3. output pdf file
             XrefTreeArgument outputPdfFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputPdfFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, outputPdfFileNameOSS),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
@@ -759,7 +763,7 @@ namespace forgeSample.Controllers
             // 1. input file
             XrefTreeArgument inputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, inputFileNameOSS),
                 Headers = new Dictionary<string, string>()
                  {
                      { "Authorization", "Bearer " + oauth.access_token }
@@ -776,7 +780,7 @@ namespace forgeSample.Controllers
             // 3. output file
             XrefTreeArgument outputFileArgument = new XrefTreeArgument()
             {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileNameOSS),
+                Url = string.Format(bucketUrl, bucketKey, outputFileNameOSS),
                 Verb = Verb.Put,
                 Headers = new Dictionary<string, string>()
                    {
