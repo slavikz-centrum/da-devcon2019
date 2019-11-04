@@ -11,9 +11,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugPluginLocally", "inven
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InventorSatExportPlugin", "inventorPlugins\InventorSatExport\InventorSatExportPlugin\InventorSatExportPlugin.csproj", "{E0EEA3D7-D805-40C1-A1C3-CAC859DA1A2E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InteractionRevit", "C:\_git\slavikz-centrum\da-devcon2019\revit\Sat2Revit\InteractionRevit\InteractionRevit.csproj", "{9D8F868C-0210-43B6-946D-78DA81D716F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InteractionRevit", "revit\Sat2Revit\InteractionRevit\InteractionRevit.csproj", "{9D8F868C-0210-43B6-946D-78DA81D716F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sat2Revit", "C:\_git\slavikz-centrum\da-devcon2019\revit\Sat2Revit\Sat2RevitPlugin\Sat2Revit.csproj", "{1B28EA8E-0AB5-47C4-8BEA-A08D3FAD3C7C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sat2Revit", "revit\Sat2Revit\Sat2RevitPlugin\Sat2Revit.csproj", "{1B28EA8E-0AB5-47C4-8BEA-A08D3FAD3C7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
