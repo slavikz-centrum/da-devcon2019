@@ -38,7 +38,7 @@ namespace InventorSatExportPlugin
 
         public void Run(Document doc)
         {
-            LogTrace("Run called with {0}", doc.DisplayName);
+            LogTrace("Start Processing Run method");
             NameValueMap map = inventorApplication.TransientObjects.CreateNameValueMap();
             RunWithArguments(doc, map);
         }
@@ -49,21 +49,8 @@ namespace InventorSatExportPlugin
 
             try
             {
-                StringBuilder traceInfo = new StringBuilder("RunWithArguments called with ");
-                traceInfo.Append(doc.DisplayName);
-                Trace.TraceInformation(map.Count.ToString());
-
-                // values in map are keyed on _1, _2, etc
-                for (int i = 0; i < map.Count; i++)
-                {
-                    traceInfo.Append(" and ");
-                    traceInfo.Append(map.Value["_" + (i + 1)]);
-                }
-
-                Trace.TraceInformation(traceInfo.ToString());
-
                 //string dirPath = System.IO.Path.GetDirectoryName(doc.FullDocumentName);
-                string dirPath = System.IO.Directory.GetCurrentDirectory();
+                string currentDirPath = System.IO.Directory.GetCurrentDirectory();
 
                 #region ExportSAT file 
 
@@ -97,8 +84,8 @@ namespace InventorSatExportPlugin
                         Trace.TraceInformation("SAT: create data medium");
                         DataMedium oData = inventorApplication.TransientObjects.CreateDataMedium();
 
-                        Trace.TraceInformation("SAT save to: " + dirPath + "\\export.sat");
-                        oData.FileName = dirPath + "\\export.sat";
+                        Trace.TraceInformation("SAT save to: " + currentDirPath + "\\export.sat");
+                        oData.FileName = currentDirPath + "\\export.sat";
 
                         oIgesMap.set_Value("GeometryType", 1);
 
@@ -107,7 +94,7 @@ namespace InventorSatExportPlugin
                     }
 
                     #endregion
-
+                    GetListOfDirectory(System.IO.Directory.GetCurrentDirectory());
                 }
 
             }
@@ -115,6 +102,23 @@ namespace InventorSatExportPlugin
             {
                 LogError("Processing failed. " + e.ToString());
             }
+        }
+
+        public void GetListOfDirectory(string dirPath)
+        {
+            string[] directories = System.IO.Directory.GetDirectories(dirPath);
+            string[] files = System.IO.Directory.GetFiles(dirPath);
+            LogTrace(" List Of Directory : " + dirPath);
+            foreach (string directory in directories)
+            {
+                LogTrace("Dir: " + directory);
+            }
+
+            foreach (string file in files)
+            {
+                LogTrace("File: " + file);
+            }
+            LogTrace("-----------------------------------------------------------");
         }
 
         #region Logging utilities

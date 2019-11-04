@@ -94,7 +94,9 @@ namespace Interaction
                             Constants.Parameters.InventorDoc,
                             new XrefTreeArgument
                             {
-                                Url = "!!! CHANGE ME !!!"
+                                PathInZip = "Demo1\\CNC_01.iam",
+                                LocalName = "Demo",
+                                Url = "https://inventor-io-samples.s3.us-west-2.amazonaws.com/holecep/RFA/InvAssembly.zip?AWSAccessKeyId=AKIAINFJUJXZQ3REAW2A&Expires=1575125640&Signature=SJEVj3PkgmQIsGGPRJDypnsdN%2BU%3D"
                             }
                         },
                         {
@@ -102,7 +104,7 @@ namespace Interaction
                             new XrefTreeArgument
                             {
                                 Verb = Verb.Put,
-                                Url = "!!! CHANGE ME !!!"
+                                Url = "https://inventor-io-samples.s3.us-west-2.amazonaws.com/holecep/RFA/export.sat?AWSAccessKeyId=AKIAINFJUJXZQ3REAW2A&Expires=1577543220&Signature=PvHL31TX%2BVf0DEJwzzHwIyvKLBc%3D"
                             }
                         }
                     };
