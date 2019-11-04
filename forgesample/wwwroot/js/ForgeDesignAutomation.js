@@ -251,27 +251,20 @@ function startUpdateDrawing() {
 function startRfaDownload() {
 	clearLog();
 	//$('#bomTableBody').html('');
-	writeLog('Download Rfa clicked.')
+	writeLog('Rfa generation started.');
+
 
 	startConnection(function () {
-		var file = 'result.zip';
-		var projectPath = $('#projectPath').val();
-		var documentPath = $('#documentPath').val();
-		var updateData = {
-			'file': file,
-			'projectPath': projectPath,
-			'documentPath': documentPath,
-			'drawingDocName': 'Skid Packing Layout',// Todo: expose this in the client on the drawing tab
-			'runRule': 'Create Proposal Drawing',// Todo: expose this in the client on the drawing tab
+		var data = JSON.stringify({
+			documentPath: $('#documentPath').val(),
+			projectPath: $('#projectPath').val(),
+			inputFile: $('#inputFile').val(),
 			browerConnectionId: connectionId
-		};
-
-		var updateDataStr = JSON.stringify(updateData);
-
-		writeLog('Updating model with new params...');
+		});
+		writeLog('Getting document parameters ...');
 		$.ajax({
-			url: 'api/forge/designautomation/workitems/updatedrawing',
-			data: updateDataStr,
+			url: 'api/forge/designautomation/workitems/getrfa',
+			data: data,
 			contentType: 'application/json',
 			method: 'POST',
 			success: function (res) {

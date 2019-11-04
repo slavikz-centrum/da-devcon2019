@@ -805,6 +805,224 @@ namespace forgeSample.Controllers
         }
 
         /// <summary>
+        /// Start a new workitem
+        /// </summary>
+        [HttpPost]
+        [Route("api/forge/designautomation/workitems/getrfa")]
+        public async Task<IActionResult> GetRfa([FromBody]JObject workItemsSpecs)
+        {
+            // basic input validation
+            string documentPath = workItemsSpecs["documentPath"].Value<string>();
+            string inputFile = workItemsSpecs["inputFile"].Value<string>();
+            string outputFile = inputFile + ".sat";
+            string browerConnectionId = workItemsSpecs["browerConnectionId"].Value<string>();
+            string activityName = string.Format("{0}.{1}", NickName, "InventorSatExport+alpha");
+
+            string bucketKey = NickName.ToLower() + "_designautomation";
+
+            // OAuth token
+            dynamic oauth = await OAuthController.GetInternalAsync();
+
+            // prepare workitem arguments
+            // input file
+            XrefTreeArgument inputFileArgument = new XrefTreeArgument()
+            {
+                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFile),
+                PathInZip = documentPath.Split('/', 2)[1],
+                LocalName = documentPath.Split('/', 2)[0],
+                Headers = new Dictionary<string, string>()
+                 {
+                     { "Authorization", "Bearer " + oauth.access_token }
+                 }
+            };
+
+            // output file
+            XrefTreeArgument outputFileArgument = new XrefTreeArgument()
+            {
+                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFile),
+                Verb = Verb.Put,
+                Headers = new Dictionary<string, string>()
+                   {
+                       {"Authorization", "Bearer " + oauth.access_token }
+                   }
+            };
+
+            // prepare & submit workitem
+            string callbackUrl = string.Format("{0}/api/forge/callback/designautomation/inventorsatexport?id={1}&outputFileName={2}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), browerConnectionId, HttpUtility.UrlEncode(outputFile));
+            WorkItem workItemSpec = new WorkItem()
+            {
+                ActivityId = activityName,
+                Arguments = new Dictionary<string, IArgument>()
+                {
+                    { "InventorDoc", inputFileArgument },
+                    { "OutputSat", outputFileArgument },
+                    { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
+                }
+            };
+            try
+            {
+                WorkItemStatus workItemStatus = await _designAutomation.CreateWorkItemsAsync(workItemSpec);
+                return Ok(new { WorkItemId = workItemStatus.Id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Callback from Design Automation Workitem (onProgress or onComplete)
+        /// </summary>
+        [HttpPost]
+        [Route("/api/forge/callback/designautomation/inventorsatexport")]
+        public async Task<IActionResult> OnCallbackInventorSatExport(string id, string outputFileName, [FromBody]dynamic body)
+        {
+            try
+            {
+                // your webhook should return immediately! we can use Hangfire to schedule a job
+                JObject bodyJson = JObject.Parse((string)body.ToString());
+                await _hubContext.Clients.Client(id).SendAsync("onComplete", bodyJson.ToString());
+
+                var client = new RestClient(bodyJson["reportUrl"].Value<string>());
+                var request = new RestRequest(string.Empty);
+
+                byte[] bs = client.DownloadData(request);
+                string report = System.Text.Encoding.Default.GetString(bs);
+                await _hubContext.Clients.Client(id).SendAsync("onComplete", report);
+
+                await startSat2RfaWorkitem(id, outputFileName);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: " + e.Message);
+            }
+            // ALWAYS return ok (200)
+            return Ok();
+        }
+
+        public async Task<IActionResult> startSat2RfaWorkitem(string connectionId, string satFileName)
+        {
+            // basic input validation
+            // string documentPath = workItemsSpecs["documentPath"].Value<string>();
+            // string inputFile = workItemsSpecs["inputFile"].Value<string>();
+            string outputFile = Path.ChangeExtension(satFileName, ".rfa");
+            string activityName = string.Format("{0}.{1}", NickName, "InventorSatExport+alpha");  // TODO
+
+            string bucketKey = NickName.ToLower() + "_designautomation";
+
+            // OAuth token
+            dynamic oauth = await OAuthController.GetInternalAsync();
+
+            // prepare workitem arguments
+            // input file
+            XrefTreeArgument inputFileArgument = new XrefTreeArgument()
+            {
+                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, satFileName),
+                Headers = new Dictionary<string, string>()
+                 {
+                     { "Authorization", "Bearer " + oauth.access_token }
+                 }
+            };
+
+            // output file
+            XrefTreeArgument outputFileArgument = new XrefTreeArgument()
+            {
+                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFile),
+                Verb = Verb.Put,
+                Headers = new Dictionary<string, string>()
+                   {
+                       {"Authorization", "Bearer " + oauth.access_token }
+                   }
+            };
+
+            // prepare & submit workitem
+            string callbackUrl = string.Format("{0}/api/forge/callback/designautomation/revitrfaexport?id={1}&outputFileName={2}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), connectionId, HttpUtility.UrlEncode(outputFile));
+            // TODO: spec for Revit WI
+            WorkItem workItemSpec = new WorkItem()
+            {
+                ActivityId = activityName,
+                Arguments = new Dictionary<string, IArgument>()
+                {
+                    { "InventorDoc", inputFileArgument },
+                    { "OutputSat", outputFileArgument },
+                    { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
+                }
+            };
+            try
+            {
+                WorkItemStatus workItemStatus = await _designAutomation.CreateWorkItemsAsync(workItemSpec);
+                return Ok(new { WorkItemId = workItemStatus.Id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Callback from Design Automation Workitem (onProgress or onComplete)
+        /// </summary>
+        [HttpPost]
+        [Route("/api/forge/callback/designautomation/revitrfaexport")]
+        public async Task<IActionResult> OnCallbackRevitRfaExport(string id, string outputFileName, [FromBody]dynamic body)
+        {
+            // TOOD: slightly modify to provide rfa download link
+            try
+            {
+                // your webhook should return immediately! we can use Hangfire to schedule a job
+                //await UpdateViewable(id, outputFileName, "onParameters", "viewable.zip" , body);
+
+                // your webhook should return immediately! we can use Hangfire to schedule a job
+                JObject bodyJson = JObject.Parse((string)body.ToString());
+                await _hubContext.Clients.Client(id).SendAsync("onComplete", bodyJson.ToString());
+
+                var client = new RestClient(bodyJson["reportUrl"].Value<string>());
+                var request = new RestRequest(string.Empty);
+
+                byte[] bs = client.DownloadData(request);
+                string report = System.Text.Encoding.Default.GetString(bs);
+                await _hubContext.Clients.Client(id).SendAsync("onComplete", report);
+
+                // Read parameters from json result file
+                ObjectsApi objectsApi = new ObjectsApi();
+                dynamic parameters = await objectsApi.GetObjectAsyncWithHttpInfo(NickName.ToLower() + "_designautomation", outputFileName);
+                string data;
+                using (StreamReader reader = new StreamReader(parameters.Data))
+                {
+                    data = reader.ReadToEnd();
+                }
+
+                await _hubContext.Clients.Client(id).SendAsync("onParameters", data);
+
+                // Get LMV viewable and host on web server
+                string viewable = "viewable.zip";
+                string filePath = "wwwroot/viewables/" + viewable;
+                using (System.IO.Stream viewableStream = objectsApi.GetObject(NickName.ToLower() + "_designautomation", viewable))
+                using (FileStream fileFile = System.IO.File.Create(filePath))
+                {
+                    viewableStream.CopyTo(fileFile);
+                }
+                string viewableDir = "wwwroot/viewables/viewable";
+                // Delete the old viewable if it exists (to optimize this cache by configuration)
+                if (Directory.Exists(viewableDir))
+                {
+                    Directory.Delete(viewableDir, true);
+                }
+
+                // Unzip the viewable
+                ZipFile.ExtractToDirectory(filePath, viewableDir);
+                await _hubContext.Clients.Client(id).SendAsync("onViewableUpdate", "");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: " + e.Message);
+            }
+
+            // ALWAYS return ok (200)
+            return Ok();
+        }
+
+        /// <summary>
         /// Return a list of available engines
         /// </summary>
         [HttpGet]
