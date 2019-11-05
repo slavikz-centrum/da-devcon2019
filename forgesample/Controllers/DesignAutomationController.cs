@@ -885,16 +885,83 @@ namespace forgeSample.Controllers
             {
                 // your webhook should return immediately! we can use Hangfire to schedule a job
                 JObject bodyJson = JObject.Parse((string)body.ToString());
-                await _hubContext.Clients.Client(id).SendAsync("onComplete", bodyJson.ToString());
+                await _hubContext.Clients.Client(id).SendAsync("onProgress", bodyJson.ToString());
 
                 var client = new RestClient(bodyJson["reportUrl"].Value<string>());
                 var request = new RestRequest(string.Empty);
 
                 byte[] bs = client.DownloadData(request);
                 string report = System.Text.Encoding.Default.GetString(bs);
-                await _hubContext.Clients.Client(id).SendAsync("onComplete", report);
+                await _hubContext.Clients.Client(id).SendAsync("onProgress", report);
 
-                await startSat2RfaWorkitem(id, outputFileName);
+                // start Sat2Rfa Workitem
+                // basic input validation
+                // string documentPath = workItemsSpecs["documentPath"].Value<string>();
+                // string inputFile = workItemsSpecs["inputFile"].Value<string>();
+                string outputFile = Path.ChangeExtension(outputFileName, ".rfa");
+                string activityName = string.Format("{0}.{1}", NickName, "Sat2Revit+alpha");  // TODO
+
+                string bucketKey = NickName.ToLower() + "_designautomation";
+
+                // OAuth token
+                dynamic oauth = await OAuthController.GetInternalAsync();
+
+                // prepare workitem arguments
+                // input file
+                XrefTreeArgument inputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileName),
+                    Headers = new Dictionary<string, string>()
+                    {
+                        { "Authorization", "Bearer " + oauth.access_token }
+                    }
+                };
+
+                // revit template
+                XrefTreeArgument revitTemplateArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, "RevitTemplate"),
+                    Headers = new Dictionary<string, string>()
+                    {
+                        { "Authorization", "Bearer " + oauth.access_token }
+                    }
+                };
+
+                // output file
+                XrefTreeArgument outputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFile),
+                    Verb = Verb.Put,
+                    Headers = new Dictionary<string, string>()
+                    {
+                        {"Authorization", "Bearer " + oauth.access_token }
+                    }
+                };
+
+                await _hubContext.Clients.Client(id).SendAsync("onProgress", "Preparing sat2Revit workitem...");
+                // prepare & submit workitem
+                string callbackUrl = string.Format("{0}/api/forge/callback/designautomation/revitrfaexport?id={1}&outputFileName={2}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), id, HttpUtility.UrlEncode(outputFile));
+                WorkItem workItemSpec = new WorkItem()
+                {
+                    ActivityId = activityName,
+                    Arguments = new Dictionary<string, IArgument>()
+                    {
+                        { "InputGeometry", inputFileArgument },
+                        { "FamilyTemplate", revitTemplateArgument },
+                        { "ResultModel", outputFileArgument },
+                        { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
+                    }
+                };
+                try
+                {
+                    WorkItemStatus workItemStatus = await _designAutomation.CreateWorkItemsAsync(workItemSpec);
+                    await _hubContext.Clients.Client(id).SendAsync("onProgress", $"Workitem started: {workItemStatus.Id}");
+                    return Ok(new { WorkItemId = workItemStatus.Id });
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(ex.Message);
+                }
             }
             catch (Exception e)
             {
@@ -902,65 +969,6 @@ namespace forgeSample.Controllers
             }
             // ALWAYS return ok (200)
             return Ok();
-        }
-
-        public async Task<IActionResult> startSat2RfaWorkitem(string connectionId, string satFileName)
-        {
-            // basic input validation
-            // string documentPath = workItemsSpecs["documentPath"].Value<string>();
-            // string inputFile = workItemsSpecs["inputFile"].Value<string>();
-            string outputFile = Path.ChangeExtension(satFileName, ".rfa");
-            string activityName = string.Format("{0}.{1}", NickName, "InventorSatExport+alpha");  // TODO
-
-            string bucketKey = NickName.ToLower() + "_designautomation";
-
-            // OAuth token
-            dynamic oauth = await OAuthController.GetInternalAsync();
-
-            // prepare workitem arguments
-            // input file
-            XrefTreeArgument inputFileArgument = new XrefTreeArgument()
-            {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, satFileName),
-                Headers = new Dictionary<string, string>()
-                 {
-                     { "Authorization", "Bearer " + oauth.access_token }
-                 }
-            };
-
-            // output file
-            XrefTreeArgument outputFileArgument = new XrefTreeArgument()
-            {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFile),
-                Verb = Verb.Put,
-                Headers = new Dictionary<string, string>()
-                   {
-                       {"Authorization", "Bearer " + oauth.access_token }
-                   }
-            };
-
-            // prepare & submit workitem
-            string callbackUrl = string.Format("{0}/api/forge/callback/designautomation/revitrfaexport?id={1}&outputFileName={2}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), connectionId, HttpUtility.UrlEncode(outputFile));
-            // TODO: spec for Revit WI
-            WorkItem workItemSpec = new WorkItem()
-            {
-                ActivityId = activityName,
-                Arguments = new Dictionary<string, IArgument>()
-                {
-                    { "InventorDoc", inputFileArgument },
-                    { "OutputSat", outputFileArgument },
-                    { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
-                }
-            };
-            try
-            {
-                WorkItemStatus workItemStatus = await _designAutomation.CreateWorkItemsAsync(workItemSpec);
-                return Ok(new { WorkItemId = workItemStatus.Id });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
 
         /// <summary>

@@ -261,7 +261,7 @@ function startRfaDownload() {
 			inputFile: $('#inputFile').val(),
 			browerConnectionId: connectionId
 		});
-		writeLog('Getting document parameters ...');
+		writeLog('Starting i2sat workitem ...');
 		$.ajax({
 			url: 'api/forge/designautomation/workitems/getrfa',
 			data: data,
@@ -344,9 +344,13 @@ function startConnection(onReady) {
         writeLog('<a href="' + url + '">Download result file here</a>');
     });
 
-    connection.on("onComplete", function (message) {
-        writeLog(message);
-    });
+	connection.on("onComplete", function (message) {
+		writeLog(message);
+	});
+
+	connection.on("onProgress", function (message) {
+		writeLog(message);
+	});
 
     connection.on("onParameters", function (message) {
         updateParameters(message);
