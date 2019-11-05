@@ -609,7 +609,7 @@
 				}
 			},
 			"response": []
-		}***,
+		},
 		{
 			"name": "Upload RevitTemplate to OSS",
 			"request": {
